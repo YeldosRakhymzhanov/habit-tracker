@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Habit Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e12;
+      --surface: #17171f;
+      --surface2: #1f1f2e;
+      --border: rgba(255,255,255,0.07);
+      --accent: #c8a97e;
+      --accent2: #7e9fc8;
+      --text: #f0ede6;
+      --muted: #888880;
+      --danger: #e06c6c;
+      --success: #6cbf8a;
+      --streak: #e8a94a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 48px 16px 80px;
+    }
+
+    /* Subtle radial glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(200,169,126,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    .header .date {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-card .stat-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+
+    /* Input */
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .input-wrap input {
+      flex: 1;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 0 16px;
+      height: 46px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-wrap input::placeholder { color: var(--muted); }
+    .input-wrap input:focus { border-color: var(--accent); }
+
+    .btn-add {
+      height: 46px;
+      padding: 0 22px;
+      background: var(--accent);
+      color: #0e0e12;
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover { opacity: 0.88; }
+    .btn-add:active { transform: scale(0.97); }
+
+    /* Habit list */
+    #habitList {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .habit-item {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: default;
+      transition: border-color 0.2s, transform 0.15s;
+      animation: slideIn 0.25s ease both;
+    }
+
+    .habit-item:hover {
+      border-color: rgba(255,255,255,0.14);
+      transform: translateY(-1px);
+    }
+
+    .habit-item.completed {
+      border-color: rgba(108,191,138,0.25);
+      background: rgba(108,191,138,0.04);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Custom checkbox */
+    .check-wrap {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .check-wrap.checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .check-wrap svg {
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .check-wrap.checked svg {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Habit info */
+    .habit-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .habit-name {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .habit-name:hover { color: var(--accent2); }
+
+    .habit-item.completed .habit-name {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .habit-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Streak badge */
+    .streak-badge {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(232,169,74,0.1);
+      border: 0.5px solid rgba(232,169,74,0.2);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--streak);
+    }
+
+    .streak-badge .flame {
+      font-size: 13px;
+    }
+
+    /* Delete btn */
+    .btn-del {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s;
+    }
+
+    .habit-item:hover .btn-del { opacity: 1; }
+    .btn-del:hover { background: rgba(224,108,108,0.12); }
+    .btn-del svg { stroke: var(--danger); }
+
+    /* History panel */
+    #historyPanel {
+      margin-top: 28px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: none;
+      animation: slideIn 0.2s ease both;
+    }
+
+    #historyPanel.open { display: block; }
+
+    .history-header {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .history-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .history-header .history-name {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-close:hover { background: var(--surface2); }
+
+    .history-body { padding: 18px; }
+
+    .history-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .history-box {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      position: relative;
+      cursor: default;
+      transition: transform 0.1s;
+    }
+
+    .history-box:hover { transform: scale(1.2); }
+    .history-box.done { background: var(--success); }
+    .history-box.miss { background: var(--surface2); border: 0.5px solid var(--border); }
+
+    .history-box .tip {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2c2c3a;
+      color: var(--text);
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .history-box:hover .tip { opacity: 1; }
+
+    /* Legend */
+    .history-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 14px;
+      display: none;
+    }
+
+    .empty-state svg { margin: 0 auto 14px; display: block; opacity: 0.3; }
+
+    .chart-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 28px;
+    }
+    
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+    <body>
+
+    <div class="container">
+
+      <header class="header">
+        <p class="eyebrow">Daily Rituals</p>
+        <h1>Habit Tracker</h1>
+        <p class="date" id="todayDate"></p>
+      </header>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Habits</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statDone">0</div>
+          <div class="stat-label">Done today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statBest">0</div>
+          <div class="stat-label">Longest streak</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <canvas id="weeklyChart"></canvas>
+      </div>
+
+      <div class="input-wrap">
+        <input id="habitInput" placeholder="Add a new habit…" />
+        <button class="btn-add" onclick="addHabit()">+ Add</button>
+      </div>
+
+      <ul id="habitList"></ul>
+
+      <div class="empty-state" id="emptyState">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#888880" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        No habits yet. Add one above to get started.
+      </div>
+
+      <div id="historyPanel">
+        <div class="history-header">
+          <div>
+            <h3>History</h3>
+            <div class="history-name" id="historyHabitName"></div>
+
+            <div style="margin-top:8px; display:flex; gap:6px;">
+                <button onclick="reloadHistory(7)" style="padding:4px 10px; border:none; border-radius:8px; cursor:pointer;">
+                7d
+                </button>
+
+                <button onclick="reloadHistory(30)" style="padding:4px 10px; border:none; border-radius:8px; cursor:pointer;">
+                30d
+                </button>
+            </div>
+          </div>
+          <button class="btn-close" onclick="closeHistory()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#888880" stroke-width="2" stroke-linecap="round">
+              <line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/>
+            </svg>
+          </button>
+        </div>
+        <div class="history-body">
+          <div class="history-grid" id="historyGrid"></div>
+          <div class="history-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Completed</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--surface2);border:0.5px solid var(--border)"></div>Missed</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      const API = "http://localhost:8080/habits";
+      let currentHistoryHabit = null;
+      let currentHistoryName = "";
+      let weeklyChart = null;
+
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const now = new Date();
+      document.getElementById("todayDate").textContent =
+        days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+
+      window.onload = loadHabits;
+
+      document.getElementById("habitInput").addEventListener("keydown", e => {
+        if (e.key === "Enter") addHabit();
+      });
+
+      function loadHabits() {
+        fetch(API)
+          .then(r => r.json())
+          .then(data => {
+            renderHabits(data);
+            loadAnalytics();
+            loadWeeklyChart();
+          })
+          .catch(() => renderHabits([]));
+      }
+      
+      function renderHabits(data) {
+        const list = document.getElementById("habitList");
+        const empty = document.getElementById("emptyState");
+        list.innerHTML = "";
+
+        if (!data.length) {
+          empty.style.display = "block";
+          loadAnalytics(0, 0, 0);
+          return;
+        }
+
+        empty.style.display = "none";
+
+        let done = 0;
+        let bestStreak = 0;
+
+        data.forEach(habit => {
+          if (habit.completedToday) done++;
+          if (habit.streak > bestStreak) bestStreak = habit.streak;
+
+          const li = document.createElement("li");
+          li.className = "habit-item" + (habit.completedToday ? " completed" : "");
+
+          li.innerHTML = `
+            <div class="check-wrap ${habit.completedToday ? 'checked' : ''}" onclick="toggleHabit(${habit.id}, this)">
+              <svg width="11" height="9" viewBox="0 0 11 9" fill="none" stroke="#0e0e12" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1,4 4,8 10,1"/>
+              </svg>
+            </div>
+            <div class="habit-info">
+              <div class="habit-name" onclick="openHistory(${habit.id}, '${escHtml(habit.name)}')">${escHtml(habit.name)}</div>
+              <div class="habit-sub">Tap name to see history</div>
+            </div>
+            <div class="streak-badge">
+              <span class="flame">🔥</span>
+              ${habit.streak}
+            </div>
+            <button class="btn-del" onclick="deleteHabit(${habit.id})" title="Delete habit">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#e06c6c" stroke-width="1.8" stroke-linecap="round">
+                <line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/>
+              </svg>
+            </button>
+          `;
+          list.appendChild(li);
+        });
+
+        loadAnalytics(data.length, done, bestStreak);
+      }
+
+      function loadAnalytics() {
+        fetch(`${API}/analytics`)
+          .then(r => r.json())
+          .then(stats => {
+
+            document.getElementById("statTotal").textContent =
+              stats.totalHabits;
+
+            document.getElementById("statDone").textContent =
+              stats.completedToday;
+
+            document.getElementById("statBest").textContent =
+              stats.longestStreak;
+          });
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+
+      function addHabit() {
+        const input = document.getElementById("habitInput");
+        const name = input.value.trim();
+        if (!name) return;
+
+        fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name })
+        }).then(() => { input.value = ""; loadHabits(); });
+      }
+
+      function deleteHabit(id) {
+        fetch(`${API}/${id}`, { method: "DELETE" }).then(loadHabits);
+      }
+
+      function toggleHabit(id, checkEl) {
+        fetch(`${API}/${id}/today`, { method: "PUT" }).then(() => {
+          loadHabits();
+          closeHistory();
+        });
+      }
+      function openHistory(id, name) {
+        currentHistoryHabitId = id;
+        currentHistoryHabitName = name;
+
+        showHistory(id, name, 30);
+      }
+
+      function reloadHistory(days) {
+        showHistory(
+            currentHistoryHabitId,
+            currentHistoryHabitName,
+            days
+        );  
+      }
+      function showHistory(id, name, days = 30) {
+        document.getElementById("historyHabitName").textContent =
+            `${name} · Last ${days} days`;
+
+        fetch(`${API}/${id}/history?days=${days}`)
+            .then(r => r.json())
+            .then(data => {
+
+            const grid = document.getElementById("historyGrid");
+            grid.innerHTML = "";
+
+            // convert backend logs into map
+            const completedMap = {};
+
+            data.forEach(log => {
+                completedMap[log.date] = log.completed;
+            });
+
+            // build full timeline
+            for (let i = days - 1; i >= 0; i--) {
+
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+
+                const iso = d.toISOString().split("T")[0];
+
+                const box = document.createElement("div");
+
+                const done = completedMap[iso];
+
+                box.className = "history-box " + (done ? "done" : "miss");
+
+                box.innerHTML = `
+                <div class="tip">
+                    ${iso}<br>
+                    ${done ? "Completed" : "Missed"}
+                </div>
+                `;
+
+                grid.appendChild(box);
+            }
+
+            document.getElementById("historyPanel").classList.add("open");
+
+            document.getElementById("historyPanel")
+                .scrollIntoView({
+                behavior: "smooth",
+                block: "nearest"
+                });
+            });
+      }
+
+      function closeHistory() {
+        document.getElementById("historyPanel").classList.remove("open");
+      }
+
+      function loadWeeklyChart() {
+        fetch(`${API}/weekly`)
+          .then(r => r.json())
+          .then(data => {
+
+            const labels = data.map(d => d.day);
+            const values = data.map(d => d.completed);
+
+            const ctx = document
+              .getElementById("weeklyChart");
+
+            if (weeklyChart) {
+              weeklyChart.destroy();
+            }
+
+            weeklyChart = new Chart(ctx, {
+              type: 'bar',
+
+              data: {
+                labels: labels,
+
+                datasets: [{
+                  label: 'Completed habits',
+                  data: values,
+                  borderWidth: 1
+                }]
+              },
+
+              options: {
+                responsive: true,
+
+                plugins: {
+                  legend: {
+                    labels: {
+                      color: '#f0ede6'
+                    }
+                  }
+                },
+
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      color: '#888880'
+                    },
+                    grid: {
+                      color: 'rgba(255,255,255,0.05)'
+                    }
+                  },
+
+                  x: {
+                    ticks: {
+                      color: '#888880'
+                    },
+                    grid: {
+                      color: 'rgba(255,255,255,0.03)'
+                    }
+                  }
+                }
+              }
+            });
+          });
+      }
+
+    </script>
+
+</body>
+</html>
