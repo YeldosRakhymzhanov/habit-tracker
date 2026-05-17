@@ -450,6 +450,17 @@
         <canvas id="weeklyChart"></canvas>
       </div>
 
+      <div id="loginBox" class="input-wrap">
+        <input id="username" placeholder="Username" />
+        <input id="password" placeholder="Password" type="password" />
+        <button class="btn-add" onclick="login()">Login</button>
+        <button class="btn-add" onclick="register()">Register</button>
+      </div>
+
+      <div id="userBar" style="display:none; margin-bottom:20px; color:#c8a97e;">
+        Logged in as: <span id="currentUser"></span>
+        <button onclick="logout()" style="margin-left:10px;">Logout</button>
+      </div>
       <div class="input-wrap">
         <input id="habitInput" placeholder="Add a new habit…" />
         <button class="btn-add" onclick="addHabit()">+ Add</button>
@@ -502,6 +513,7 @@
       let currentHistoryHabit = null;
       let currentHistoryName = "";
       let weeklyChart = null;
+      let currentUser = localStorage.getItem("user");
 
       const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
       const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -509,7 +521,10 @@
       document.getElementById("todayDate").textContent =
         days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
 
-      window.onload = loadHabits;
+      window.onload = () => {
+        updateUI();
+        loadHabits();
+      };
 
       document.getElementById("habitInput").addEventListener("keydown", e => {
         if (e.key === "Enter") addHabit();
@@ -518,12 +533,7 @@
       function loadHabits() {
         fetch(API)
           .then(r => r.json())
-          .then(data => {
-            renderHabits(data);
-            loadAnalytics();
-            loadWeeklyChart();
-          })
-          .catch(() => renderHabits([]));
+          .then(renderHabits);
       }
       
       function renderHabits(data) {
@@ -600,11 +610,26 @@
         const name = input.value.trim();
         if (!name) return;
 
+        if (!currentUser) {
+          alert("Please login first");
+          return;
+        }
+
         fetch(API, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: {"Content-Type":"application/json"},
           body: JSON.stringify({ name })
-        }).then(() => { input.value = ""; loadHabits(); });
+        })
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to add habit");
+          return res.json();
+        })
+        .then(() => {
+          input.value = "";
+          loadHabits();
+        })
+        .catch(err => console.error("ADD HABIT ERROR:", err));
       }
 
       function deleteHabit(id) {
@@ -751,6 +776,54 @@
           });
       }
 
+      function login() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        fetch("http://localhost:8080/auth/login", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({username, password})
+        })
+        .then(r => r.text())
+        .then(res => {
+          if (res === "Login successful") {
+            localStorage.setItem("user", username);
+            currentUser = username;
+            updateUI();
+            loadHabits();
+          } else {
+            alert("Wrong login");
+          }
+        });
+      }
+      function register() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        fetch("http://localhost:8080/auth/register", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({username, password})
+        })
+        .then(r => r.text())
+        .then(alert);
+      }
+      function logout() {
+        localStorage.removeItem("user");
+        currentUser = null;
+        updateUI();
+      }
+      function updateUI() {
+        if (currentUser) {
+          document.getElementById("loginBox").style.display = "none";
+          document.getElementById("userBar").style.display = "block";
+          document.getElementById("currentUser").textContent = currentUser;
+        } else {
+          document.getElementById("loginBox").style.display = "flex";
+          document.getElementById("userBar").style.display = "none";
+        }
+      }
     </script>
 
 </body>

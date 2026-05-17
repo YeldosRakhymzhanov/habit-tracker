@@ -20,6 +20,8 @@ import com.example.habittracker.model.Habit;
 import com.example.habittracker.model.HabitLog;
 import com.example.habittracker.service.HabitService;
 
+import jakarta.servlet.http.HttpSession;
+
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/habits")
@@ -31,7 +33,16 @@ public class HabitController {
         this.service = service;
     }
     @PostMapping
-    public Habit createHabit(@RequestBody Habit habit) {
+    public Habit createHabit(@RequestBody Habit habit, HttpSession session) {
+
+        String user = (String) session.getAttribute("user");
+
+        if (user == null) {
+            throw new RuntimeException("User not logged in");
+        }
+
+        habit.setUsername(user);
+
         return service.saveHabit(habit);
     }
     @GetMapping("/{id}/history")
@@ -51,9 +62,13 @@ public class HabitController {
         return service.toggleToday(id);
     }
     @GetMapping
-    public List<HabitDTO> getHabits() {
-        return service.getHabitsWithTodayStatus();
+    public List<HabitDTO> getHabits(HttpSession session) {
+
+        String user = (String) session.getAttribute("user");
+
+        return service.getHabitsWithTodayStatus(user);
     }
+
     @GetMapping("/analytics")
     public AnalyticsDTO analytics() {
         return service.getAnalytics();
@@ -62,4 +77,5 @@ public class HabitController {
     public List<DayStatDTO> weeklyStats() {
         return service.getWeeklyStats();
     }
+    
 }

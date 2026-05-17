@@ -55,10 +55,10 @@ public class HabitService {
         log.setCompleted(!log.isCompleted());
         return logRepository.save(log);
     }
-    public List<HabitDTO> getHabitsWithTodayStatus() {
+    public List<HabitDTO> getHabitsWithTodayStatus(String user) {
         LocalDate today = LocalDate.now();
 
-        return repository.findAll().stream().map(habit -> {
+        return repository.findByUsername(user).stream().map(habit -> {
             boolean completed = logRepository
                 .findByHabitIdAndDate(habit.getId(), today)
                 .map(HabitLog::isCompleted)
@@ -164,13 +164,12 @@ public class HabitService {
     }
     public List<DayStatDTO> getWeeklyStats() {
         List<DayStatDTO> result = new ArrayList<>();
-
+        List<HabitLog> allLogs = logRepository.findAll();
         for (int i = 6; i >= 0; i--) {
 
             LocalDate date = LocalDate.now().minusDays(i);
 
-            int count = (int) logRepository.findAll()
-                    .stream()
+            int count = (int) allLogs.stream()
                     .filter(log ->
                             log.getDate().equals(date) &&
                             log.isCompleted())
@@ -184,5 +183,6 @@ public class HabitService {
 
         return result;
     }
+
 }
 
