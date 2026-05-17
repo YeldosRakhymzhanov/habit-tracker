@@ -14,6 +14,7 @@ public class Habit {
 
     private String name;
     private boolean completed;
+    private String username;
 
     // Constructors
     public Habit() {}
@@ -22,6 +23,8 @@ public class Habit {
         this.name = name;
         this.completed = false;
     }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
     // Getters & Setters
     public Long getId() {

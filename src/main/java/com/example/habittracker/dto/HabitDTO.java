@@ -13,7 +13,7 @@ public class HabitDTO {
         this.completedToday = completedToday;
         this.streak = streak;
     }
-
+    public int getStreak() { return streak; }
     public Long getId() { return id; }
     public String getName() { return name; }
     public boolean isCompletedToday() { return completedToday; }
